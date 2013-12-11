@@ -1,4 +1,4 @@
 sugarcane
 =========
 
-'Sugarcane' is jaggery testing framework features
+'Sugarcane' is jaggery testing framework features (RC1)
