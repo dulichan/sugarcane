@@ -1,18 +1,20 @@
-var cola = (function () {
+var test = (function () {
 
     // for test specification name identification
     var specifcation = null,
-        log = new Log('cola - jaggery test framework'),
-        action = null;
-
+        log = new Log('test - sugarcane'),
+        action = null,
+        FILELOAD_PATH = 'scripts/reporter/lib/',
+        DASHBOARD_PAGE = 'dashboard.html',
+        MODULE_PATH = '/modules/sugarcane/';
     //test specification extension
-    var TEST_FILE_EXTENSIOIN = '.js',
+    var TEST_FILE_EXTENSIOIN = 'js',
         LIST_ACTION = {
             listSuits: 'listsuits',
             listSpecs: 'listspecs'
         };
 
-    
+
     /**
      *
      * @param func
@@ -109,28 +111,16 @@ var cola = (function () {
      *
      */
     var run = function () {
-        //log.debug(request.getContentType() + 'Called the run for cola-------' + request.getHeader("User-Agent")+':');
-        //log.debug(request.getRequestURI()+'--------- '+request.getRequestURI().indexOf(".")+'<-->'+request.getRequestURI().length-5);
-        //log.debug(request.getRequestURI().indexOf(".") > request.getRequestURI().length-5);
-        var jasmineEnv = jasmine.getEnv(),
-            renderingFormat = request.getParameter('format');
-        // line can be uncommented for User-Agent/Accept to get type
-        // renderingFormat request.getHeader("Accept"); // for to check text/html
-        //request.getContentType() for application/json --> JSON
-        //application/http -->
-        //text/html --> simpleHTMLReporter
-        if (renderingFormat == 'simplehtml') {
-            var simpleHtmlReporterx = new jasmine.simpleHTMLReporter();
-            jasmineEnv.addReporter(simpleHtmlReporterx);
+        log.debug(request.getContentType() + 'Called the run for test-------' + request.getHeader("User-Agent") + ':');
+        var jasmineEnv = jasmine.getEnv();
 
-        } else if (request.getContentType() == 'application/json') {
-            // }else if (renderingFormat == 'json'){
+        //text/html --> simpleHTMLReporter removed since AJAX dash-board is using
+        if (request.getContentType() == 'application/json') {
             var jsonReporter = new jasmine.JSONReporter();
             jasmineEnv.addReporter(jsonReporter);
 
         } else if (request.getHeader("User-Agent") != null && (request.getRequestURI().indexOf('.js') == -1) && (request.getRequestURI().indexOf('.css') == -1)) {
-            //file name will variable of String in top - TO-DO
-            loadFileToFront('scripts/reporter/lib/dasboard.html');
+            loadFileToFront(FILELOAD_PATH + DASHBOARD_PAGE);
         }
         if (urlMapper()) {
             jasmineEnv.execute();
@@ -159,7 +149,7 @@ var cola = (function () {
             var indexU = uriMatcher.elements().path.indexOf('utilities');
             if (indexU != -1) {
                 log.debug('css or js file request for page.' + uriMatcher.elements().path.substr(indexU + 9));
-                loadFileToFront('scripts/reporter/lib/' + uriMatcher.elements().path.substr(indexU + 9));
+                loadFileToFront(FILELOAD_PATH + uriMatcher.elements().path.substr(indexU + 9));
                 return false;
             } else {
                 pathMatcher1 = '/' + uriMatcher.elements().test + '/' + uriMatcher.elements().path;
@@ -171,7 +161,7 @@ var cola = (function () {
                             .lastIndexOf("/") + 1);
                     }
                 }
-                //log.debug(request.getContentType() + ' path : ' + pathMatcher1 + ',' + pathMatcher2);
+                log.debug(request.getContentType() + ' path : ' + pathMatcher1 + ',' + pathMatcher2);
                 return validatepattern(pathMatcher1, pathMatcher2) && !errorFound;
             }
         }
@@ -224,10 +214,10 @@ var cola = (function () {
             isCompleted = true;
             log.debug("is Dir " + path);
             crawl(path);
-        } else if (isExists(path + TEST_FILE_EXTENSIOIN)) {
+        } else if (isExists(path + '.' + TEST_FILE_EXTENSIOIN)) {
             isCompleted = true;
-            log.debug("is File " + path + TEST_FILE_EXTENSIOIN);
-            require(path + TEST_FILE_EXTENSIOIN);
+            log.debug("is File " + path + '.' + TEST_FILE_EXTENSIOIN);
+            require(path + '.' + TEST_FILE_EXTENSIOIN);
         }
         return isCompleted;
     };
@@ -257,7 +247,10 @@ var cola = (function () {
                     crawl(root + '/' + f.getName());
                 } else {
                     log.debug("File:" + f.getName());
-                    require(root + '/' + f.getName());
+                    if (isTestspecFile(f.getName())) {
+                        log.debug("Test File:" + f.getName());
+                        require(root + '/' + f.getName());
+                    }
                 }
 
             }
@@ -285,12 +278,12 @@ var cola = (function () {
 
     /**
      * function absolute to get absolute path of file
-     * @param path (file path) module located file path 
+     * @param path (file path) module located file path
      */
     var absolute = function (path) {
-        var process = require('process');
-        var parent = 'file:///' + (process.getProperty('jaggery.home') || process.getProperty('carbon.home')).replace(/[\\]/g, '/').replace(/^[\/]/g, '');
-        return parent + '/modules/test/' + path;
+        var systemProcess = require('process');
+        var parent = 'file:///' + (systemProcess.getProperty('jaggery.home') || systemProcess.getProperty('carbon.home')).replace(/[\\]/g, '/').replace(/^[\/]/g, '');
+        return parent + MODULE_PATH + path;
     };
 
     /**
@@ -322,7 +315,7 @@ var cola = (function () {
                 'message': errorMessage
             });
     };
-    
+
     /**
      * checking client request call 'listsuits'
      */
@@ -366,6 +359,34 @@ var cola = (function () {
         return file.isDirectory();
     };
 
+    /**
+     * function is to checks whether file is test specification file
+     *
+     * @param filename
+     * @returns boolean if files is test specification
+     */
+    var isTestspecFile = function (file) {
+        log.debug('isTestspecFile is called for file ' + file);
+        if (getfileExtension(file) == TEST_FILE_EXTENSIOIN) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+
+    /**
+     * function to get file extension
+     *
+     * @param filename
+     * @returns string of the file extension
+     */
+    var getfileExtension = function (file) {
+        var nameComponents = file.split('.');
+        if (nameComponents.length < 1) {
+            return null;
+        }
+        return nameComponents[nameComponents.length - 1];
+    };
 
     /**
      * file give the name of the file
@@ -397,7 +418,7 @@ var cola = (function () {
      */
     var isValidPath = function (path1, path2) {
         var isValid = false;
-        if ((isDirectory(path2) || isExists(path2 + TEST_FILE_EXTENSIOIN)) && !(isDirectory(path1) || isExists(path1 + TEST_FILE_EXTENSIOIN))) {
+        if ((isDirectory(path2) || isExists(path2 + '.' + TEST_FILE_EXTENSIOIN)) && !(isDirectory(path1) || isExists(path1 + '.' + TEST_FILE_EXTENSIOIN))) {
             log.debug('Current URL - path is validated for testspec name.');
             isValid = true;
         }
