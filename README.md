@@ -13,7 +13,7 @@ sugarcane:sugarcane.feature:${sugarcane.feature.version}
 
 5. Add below lines for <features>
 `<feature>
-<id>sugarcane .feature.group</id>
+<id>sugarcane.feature.group</id>
 <version>${sugarcane.feature.version}</version>
 </feature>`
 
